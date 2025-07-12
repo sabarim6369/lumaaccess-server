@@ -1,4 +1,5 @@
 const prisma = require('../lib/Prisma');
+const { ObjectId } = require('mongodb');
 
 const segregatedevicedependonaccess = async (req, res) => {
   const { userId } = req.body;
@@ -27,11 +28,18 @@ const segregatedevicedependonaccess = async (req, res) => {
   }
 };
 
-const addownership = async (req, res) => {
-  const { deviceId, userId } = req.body;
 
-  if (!deviceId || !userId) {
-    return res.status(400).json({ error: "deviceId and userId are required" });
+const addownership = async (req, res) => {
+  const { deviceId, userId, deviceName, os, hostname } = req.body;
+
+  console.log("Adding ownership for deviceId:", deviceId, "and userId:", userId);
+
+  if (!deviceId || !userId || !deviceName || !os || !hostname) {
+    return res.status(400).json({ error: "All device details and userId are required." });
+  }
+
+  if (!ObjectId.isValid(userId)) {
+    return res.status(400).json({ error: "Invalid userId format." });
   }
 
   try {
@@ -44,8 +52,24 @@ const addownership = async (req, res) => {
       },
     });
 
+    await prisma.device.upsert({
+      where: { deviceId },
+      update: {
+        name: deviceName,
+        os,
+        hostname,
+      },
+      create: {
+        deviceId,
+        name: deviceName,
+        os,
+        hostname,
+        ownerId: userId,
+      },
+    });
+
     return res.status(200).json({
-      message: "Device added to user's ownership list.",
+      message: "Device added to user's ownership and saved.",
       user,
     });
   } catch (error) {
@@ -53,4 +77,5 @@ const addownership = async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 module.exports = { segregatedevicedependonaccess,addownership };

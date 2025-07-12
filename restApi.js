@@ -29,6 +29,7 @@ app.get('/devices', (req, res) => {
       lastSeen: info.lastSeen,
     })
   }
+  console.log("Connected devices:", list)
   res.json(list)
 })
 
