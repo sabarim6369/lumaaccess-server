@@ -1,0 +1,22 @@
+{
+  "name": "backend-server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/client": "^6.11.1",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.3",
+    "nodemon": "^3.1.10",
+    "ws": "^8.18.3"
+  }
+}
