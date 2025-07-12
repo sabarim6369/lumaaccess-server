@@ -22,6 +22,7 @@ model User {
   Requesteddevice       String[]
   Alloweddevice         String[]
   Deviceconnectedtome   String[]
+   Incomingrequests      String[] 
 
   devices               Device[] @relation("UserDevices")
 }
