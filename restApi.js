@@ -84,6 +84,7 @@ wss.on('connection', (ws) => {
 })
 
 function sendCommandToDevice(deviceId, commandType) {
+  
   const deviceInfo = connectedDevices.get(deviceId)
   if (!deviceInfo) {
     return console.log(`Device ${deviceId} not found.`)
