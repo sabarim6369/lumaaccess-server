@@ -1,43 +1,4 @@
-// const express = require('express')
-// const { connectedDevices, sendCommandToDevice } = require('./wsServer')
 
-// const app = express()
-// const cors = require('cors')
-// app.use(cors())
-// app.use(express.json())
-
-// app.get('/devices', (req, res) => {
-//   const list = []
-//   for (const [deviceId, info] of connectedDevices.entries()) {
-//     list.push({
-//       id:deviceId,
-//       userId: info.userId,
-//       os: info.os,
-//       hostname: info.hostname,
-//       name: info.name,
-//       status: info.status,
-//       lastSeen: info.lastSeen
-//     })
-//   }
-//   res.json(list)
-// })
-
-
-// // ✅ POST: Send command (shutdown, sleep, etc.)
-// app.post('/send-command', (req, res) => {
-//   const { deviceId, commandType } = req.body
-//   if (!deviceId || !commandType) {
-//     return res.status(400).json({ error: 'Missing deviceId or commandType' })
-//   }
-
-//   sendCommandToDevice(deviceId, commandType)
-//   res.json({ status: 'Command sent if device is connected' })
-// })
-
-// // ✅ Start server
-// app.listen(8001, () => {
-//   console.log('REST API running on http://localhost:8001')
-// })
 const express = require('express')
 const cors = require('cors')
 const http = require('http')
@@ -47,7 +8,9 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 const Authrouter = require("./Router/Authrouter");
+const Devicerouter = require("./Router/Devicerouter");
 app.use("/api/auth", Authrouter);
+app.use("/api/device", Devicerouter);
 
 const PORT = process.env.PORT || 8081
 const connectedDevices = new Map()
