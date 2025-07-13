@@ -7,10 +7,14 @@ const cookieParser = require("cookie-parser");
 console.log("NODE_ENV:", process.env.NODE_ENV);
 
 app.use(cookieParser());
+// app.use(cors({
+//   origin:process.env.NODE_ENV === 'development'?"http://localhost:8080":"https://lumaaccess.vercel.app",
+//   credentials: true, 
+// }));
 app.use(cors({
-  origin:process.env.NODE_ENV === 'development'?"http://localhost:8080":"https://lumaaccess.vercel.app",
+  origin:"https://lumaaccess.vercel.app",
   credentials: true, 
-}));
+}))
 app.use(express.json());
 
 const Authrouter = require('./Router/Authrouter');
