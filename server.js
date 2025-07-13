@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
-
+require("dotenv").config()
 const app = express();
 const cookieParser = require("cookie-parser");
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 app.use(cookieParser());
 app.use(cors({
-  origin: ['https://lumaaccess.vercel.app',"http://localhost:8080"],
+  origin:process.env.NODE_ENV === 'development'?"http://localhost:8080":"https://lumaaccess.vercel.app",
   credentials: true, 
 }));
 app.use(express.json());
