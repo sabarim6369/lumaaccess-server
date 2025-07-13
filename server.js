@@ -3,15 +3,20 @@ const cors = require('cors');
 const http = require('http');
 
 const app = express();
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
 app.use(cors({
-  origin: 'https://lumaaccess.vercel.app',
+  origin: ['https://lumaaccess.vercel.app',"http://localhost:8080"],
   credentials: true, 
 }));app.use(express.json());
 
 const Authrouter = require('./Router/Authrouter');
 const Devicerouter = require('./Router/Devicerouter');
+const auth=require("./Auth/Auth")
 app.use('/api/auth', Authrouter);
 app.use('/api/device', Devicerouter);
+app.use("/api/auth",auth)
+
 
 const PORT = process.env.PORT || 8081;
 

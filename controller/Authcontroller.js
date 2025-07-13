@@ -22,7 +22,6 @@ const signup = async (req, res) => {
         name,
         email,
         password: hashedPassword,
-        // Initialize these as empty arrays on signup:
         sentRequests: [],
         receivedRequests: [],
         allowedDevices: [],
@@ -35,7 +34,12 @@ const signup = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-
+res.cookie("token",token,{
+   httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+    maxAge: 60 * 60 * 1000,
+})
     res.status(201).json({ message: 'User created successfully', userId: user.id, token });
   } catch (error) {
     console.error('Signup error:', error);
@@ -66,7 +70,12 @@ const login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
-
+res.cookie("token",token,{
+   httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+    maxAge: 60 * 60 * 1000,
+})
     res.json({ message: 'Login successful', token, userId: user.id });
   } catch (error) {
     console.error('Login error:', error);
