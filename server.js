@@ -3,8 +3,10 @@ const cors = require('cors');
 const http = require('http');
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: 'https://lumaaccess.vercel.app',
+  credentials: true, 
+}));app.use(express.json());
 
 const Authrouter = require('./Router/Authrouter');
 const Devicerouter = require('./Router/Devicerouter');
