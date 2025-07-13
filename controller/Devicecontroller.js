@@ -73,86 +73,47 @@ const handleSendCommand = (req, res) => {
   res.json({ status: 'Command sent if device is connected' });
 };
 
+
+
 const getConnectedDevices = async (req, res) => {
   const userId = req.query.userid;
-  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  if (!userId) return res.status(400).json({ error: "Missing userId" });
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        sentRequests: true,
-        receivedRequests: true,
-        allowedDevices: true,
-        connectedDevices: true,
-      },
-    });
-
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const {
-      sentRequests = [],
-      receivedRequests = [],
-      allowedDevices = [],
-      connectedDevices: userConnectedDevices = [],
-    } = user;
-
-    const deviceIdsToFetch = [...new Set([...allowedDevices, ...userConnectedDevices])];
-
-    const devices = await prisma.device.findMany({
-      where: { deviceId: { in: deviceIdsToFetch } },
-    });
-
-    const deviceMap = new Map(devices.map((d) => [d.deviceId, d]));
-
-    const fromUsers = await prisma.user.findMany({
-      where: { id: { in: receivedRequests } },
-      select: { id: true, name: true, email: true },
-    });
-    const userMap = new Map(fromUsers.map((u) => [u.id, u]));
-
+    const list = []
+    const user=await prisma.user.findUnique({
+      where:{id:userId}
+    })
+    console.log(user)
+  for (const [deviceId, info] of connectedDevices.entries()) {
+    let statusType="onlinedevice"
+    if(user.connectedDevices.includes(deviceId)){
+      statusType="allowed"
+    }
+    else if(user.sentRequests.includes(deviceId)){
+      statusType="requested"
+    }
    
 
-    const connected = userConnectedDevices
-      .map((devId) => ({ ...deviceMap.get(devId), statusType: 'connected' }))
-      .filter(Boolean);
-
-    const allowed = allowedDevices
-      .map((devId) => ({ ...deviceMap.get(devId), statusType: 'allowed' }))
-      .filter(Boolean);
-
-    // Incoming requests users info
-    const incomingRequests = receivedRequests
-      .map((reqUserId) => {
-        const u = userMap.get(reqUserId);
-        return u ? { userId: u.id, name: u.name, email: u.email } : null;
-      })
-      .filter(Boolean);
-
-    // Outgoing requests users info
-    const outgoingUsers = await prisma.user.findMany({
-      where: { id: { in: sentRequests } },
-      select: { id: true, name: true, email: true },
-    });
-    const outgoingRequests = outgoingUsers.map((u) => ({
-      userId: u.id,
-      name: u.name,
-      email: u.email,
-    }));
-console.log(connected)
-    res.json({
-      connected,
-      allowed,
-      incomingRequests,
-      outgoingRequests,
-    });
+    list.push({
+      id: deviceId,
+      userId: info.userId,
+      os: info.os,
+      hostname: info.hostname,
+      name: info.name,
+      status: info.status,
+      lastSeen: info.lastSeen,
+      statusType
+    })
+  }
+  console.log("Connected devices:", list)
+  res.json(list)
   } catch (error) {
-    console.error('Error in getConnectedDevices:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("❌ Error in getConnectedDevices:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
-// Send access request from one user to another
 const sendRequest = async (req, res) => {
   const { fromUserId, toUserId } = req.body;
 
