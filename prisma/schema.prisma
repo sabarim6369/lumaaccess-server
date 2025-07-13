@@ -19,21 +19,19 @@ model User {
   password              String
   createdAt             DateTime @default(now())
   updatedAt             DateTime @default(now())
-  Requesteddevice       Json?
-  Alloweddevice         String[]
-  Deviceconnectedtome   String[]
-  Incomingrequests      String[]
 
-   receivedRequests      Json? // 👈 JSON array of { userId, deviceId }
+  sentRequests          String[] // List of userIds this user has requested access to
+  receivedRequests      String[] // List of userIds who requested access to this user
+
+  allowedDevices        String[] // deviceIds that this user allowed others to access
+  connectedDevices      String[] // deviceIds this user is allowed to access
 
   devices               Device[] @relation("UserDevices")
-  sentRequests          Json?    // 👈 optionally also keep this for outgoing requests
-
 }
 
 model Device {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId()
-  deviceId  String   @unique
+  deviceId  String   @unique              // unique identifier like uuid or fingerprint
   name      String
   os        String
   hostname  String
@@ -41,4 +39,3 @@ model Device {
   owner     User     @relation("UserDevices", fields: [ownerId], references: [id]) 
   createdAt DateTime @default(now())
 }
-
