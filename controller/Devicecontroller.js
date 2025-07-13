@@ -80,51 +80,102 @@ const getConnectedDevices = async (req, res) => {
   if (!userId) return res.status(400).json({ error: "Missing userId" });
 
   try {
-    const list = []
-    const user=await prisma.user.findUnique({
-      where:{id:userId}
-    })
-    console.log(user)
-  for (const [deviceId, info] of connectedDevices.entries()) {
-    let statusType="onlinedevice"
-    if(user.connectedDevices.includes(deviceId)){
-      statusType="allowed"
-    }
-    else if(user.sentRequests.includes(deviceId)){
-      statusType="requested"
-    }
-   
+    const list = [];
+    const incomingrequest = [];
 
-    list.push({
-      id: deviceId,
-      userId: info.userId,
-      os: info.os,
-      hostname: info.hostname,
-      name: info.name,
-      status: info.status,
-      lastSeen: info.lastSeen,
-      statusType
-    })
-  }
-  console.log("Connected devices:", list)
-  res.json(list)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Fetch live devices from WebSocket
+    for (const [deviceId, info] of connectedDevices.entries()) {
+      const deviceowner = await prisma.device.findUnique({
+        where: { deviceId },
+      });
+
+      if (!deviceowner) continue;
+
+      const deviceownerid = deviceowner.ownerId;
+
+      let statusType = "onlinedevice";
+console.log(deviceownerid)
+      if (user.connectedDevices.includes(deviceownerid)) {
+        statusType = "allowed";
+      } else if (user.sentRequests.includes(deviceownerid)) {
+        statusType = "requested";
+      } else if (user.receivedRequests.includes(deviceownerid)) {
+        statusType = "incomingrequest";
+      }
+
+      list.push({
+        id: deviceId,
+        userId: info.userId,
+        os: info.os,
+        hostname: info.hostname,
+        name: info.name,
+        status: info.status,
+        lastSeen: info.lastSeen,
+        statusType,
+      });
+    }
+
+    // Handle users who requested access to your devices
+    for (const requesterId of user.receivedRequests) {
+      // const isAlreadyHandled = list.some((d) => d.userId === requesterId);
+      // if (isAlreadyHandled) continue;
+
+      // Fetch requester basic info
+      const requester = await prisma.user.findUnique({
+        where: { id: requesterId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+
+      if (requester) {
+        incomingrequest.push({
+          id: requester.id,
+          status: "offline",
+          statusType: "incomingrequest",
+          name: requester.name,
+          email: requester.email,
+        });
+      }
+    }
+
+    const connectedevice = list.filter((e) => e.statusType === "allowed");
+    const requesteddevice = list.filter((e) => e.statusType === "requested");
+    const liveincomingrequest = list.filter((e) => e.statusType === "incomingrequest");
+    console.log(connectedevice)
+console.log("✅✅✅",incomingrequest)
+    res.json({
+      list,
+      connectedevice,
+      requesteddevice,
+      incomingrequest: [...liveincomingrequest, ...incomingrequest],
+    });
   } catch (error) {
     console.error("❌ Error in getConnectedDevices:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
+
 const sendRequest = async (req, res) => {
+  console.log(req.body)
   const { fromUserId, toUserId } = req.body;
 
   if (!fromUserId || !toUserId) return res.status(400).json({ error: 'Missing fromUserId or toUserId' });
-  if (fromUserId === toUserId) return res.status(400).json({ error: 'Cannot send request to yourself' });
+  // if (fromUserId === toUserId) return res.status(400).json({ error: 'Cannot send request to yourself' });
 
   try {
-    // Fetch users to update sentRequests and receivedRequests
     const fromUser = await prisma.user.findUnique({ where: { id: fromUserId }, select: { sentRequests: true } });
     const toUser = await prisma.user.findUnique({ where: { id: toUserId }, select: { receivedRequests: true } });
-
+console.log(fromUser,toUser)
     if (!fromUser || !toUser) return res.status(404).json({ error: 'User(s) not found' });
 
     const fromUserSent = fromUser.sentRequests || [];
@@ -132,13 +183,11 @@ const sendRequest = async (req, res) => {
 
     if (fromUserSent.includes(toUserId)) return res.status(409).json({ error: 'Request already sent' });
 
-    // Update fromUser sentRequests
     await prisma.user.update({
       where: { id: fromUserId },
       data: { sentRequests: { push: toUserId } },
     });
 
-    // Update toUser receivedRequests
     await prisma.user.update({
       where: { id: toUserId },
       data: { receivedRequests: { push: fromUserId } },
@@ -150,6 +199,200 @@ const sendRequest = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+const acceptRequest = async (req, res) => {
+  console.log(req.body);
+  const { userId, requesterId } = req.body;
+
+  if (!userId || !requesterId) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+     
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Remove requester from user's receivedRequests
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        receivedRequests: {
+          set: user.receivedRequests.filter((id) => id !== requesterId),
+        },
+      },
+    });
+
+    // Get all device IDs owned by the user (device owner)
+    const ownedDevices = await prisma.device.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+
+    const deviceIds = ownedDevices.map((d) => d.id);
+
+    const requester = await prisma.user.findUnique({
+      where: { id: requesterId },
+    });
+
+    if (!requester) return res.status(404).json({ error: "Requester not found" });
+
+    await prisma.user.update({
+      where: { id: requesterId },
+      data: {
+        connectedDevices: {
+          set: Array.from(new Set([...requester.connectedDevices, userId])),
+        },
+      },
+    });
+      await prisma.user.update({
+      where: { id: userId },
+      data: {
+        allowedDevices: {
+          set: Array.from(new Set([...user.allowedDevices, requesterId])),
+        },
+      },
+    });
+
+    res.json({ message: "Request accepted" });
+  } catch (error) {
+    console.error("Error accepting request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const rejectRequest = async (req, res) => {
+  const { userId, requesterId } = req.body;
+  console.log(req.body);
+
+  if (!userId || !requesterId) {
+    return res.status(400).json({ error: "Missing parameters" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { receivedRequests: true }
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Remove requesterId from user's receivedRequests
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        receivedRequests: {
+          set: user.receivedRequests.filter(id => id !== requesterId),
+        },
+      },
+    });
+
+    // Fetch requester to get sentRequests
+    const requester = await prisma.user.findUnique({
+      where: { id: requesterId },
+      select: { sentRequests: true }
+    });
+
+    if (!requester) return res.status(404).json({ error: "Requester not found" });
+
+    // Remove userId from requester's sentRequests
+    await prisma.user.update({
+      where: { id: requesterId },
+      data: {
+        sentRequests: {
+          set: requester.sentRequests.filter(id => id !== userId),
+        },
+      },
+    });
+
+    res.json({ message: "Request rejected" });
+  } catch (error) {
+    console.error("Error rejecting request:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const allowedDevices = async (req, res) => {
+  const userId = req.query.userId;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        allowedDevices: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const allowedUsers = await prisma.user.findMany({
+      where: {
+        id: {
+          in: user.allowedDevices,
+        },
+      },
+    });
+
+    res.json(allowedUsers);
+  } catch (error) {
+    console.error("Error fetching allowed devices:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+const removeAccess = async (req, res) => {
+  const { userId, targetUserId } = req.body;
+
+  if (!userId || !targetUserId) {
+    return res.status(400).json({ error: "Missing userId or targetUserId" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { allowedDevices: true },
+    });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        allowedDevices: {
+          set: user.allowedDevices.filter(id => id !== targetUserId),
+        },
+      },
+    });
+
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { connectedDevices: true,sentRequests:true },
+    });
+
+    if (!targetUser) return res.status(404).json({ error: "Target user not found" });
+
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        connectedDevices: {
+          set: targetUser.connectedDevices.filter(id => id !== userId),
+        },
+         sentRequests: {
+      set: targetUser.sentRequests.filter(id => id !== userId),
+    },
+      },
+    });
+
+    res.json({ message: "Access successfully removed" });
+
+  } catch (error) {
+    console.error("Error removing access:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 
 module.exports = {
   segregatedevicedependonaccess,
@@ -157,4 +400,9 @@ module.exports = {
   handleSendCommand,
   getConnectedDevices,
   sendRequest,
+  rejectRequest,
+  acceptRequest,
+  allowedDevices,
+  removeAccess
 };
+
