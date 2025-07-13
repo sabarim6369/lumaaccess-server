@@ -13,29 +13,58 @@ datasource db {
   url      = "mongodb+srv://sabarim63690122:Sabari.m6369@sabarim63690122.1oeqz.mongodb.net/LumaAccess"
 }
 model User {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId()
-  name                  String
-  email                 String   @unique
-  password              String
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @default(now())
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId()
+  name               String
+  email              String           @unique
+  password           String
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @default(now())
 
-  sentRequests          String[] // List of userIds this user has requested access to
-  receivedRequests      String[] // List of userIds who requested access to this user
+  sentRequests       String[]         // List of userIds this user has requested access to
+  receivedRequests   String[]         // List of userIds who requested access to this user
 
-  allowedDevices        String[] // deviceIds that this user allowed others to access
-  connectedDevices      String[] // deviceIds this user is allowed to access
+  allowedDevices     String[]         // deviceIds this user allowed others to access
+  connectedDevices   String[]         // deviceIds this user is allowed to access
 
-  devices               Device[] @relation("UserDevices")
+  devices            Device[]         @relation("UserDevices")
+  accessPermissions  DeviceAccess[]   @relation("UserAccessPermissions") // This side of the relation
 }
 
 model Device {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId()
-  deviceId  String   @unique              // unique identifier like uuid or fingerprint
-  name      String
-  os        String
-  hostname  String
-  ownerId   String   @db.ObjectId()
-  owner     User     @relation("UserDevices", fields: [ownerId], references: [id]) 
-  createdAt DateTime @default(now())
+  id                 String           @id @default(auto()) @map("_id") @db.ObjectId()
+  deviceId           String           @unique
+  name               String
+  os                 String
+  hostname           String
+  ownerId            String           @db.ObjectId()
+  owner              User             @relation("UserDevices", fields: [ownerId], references: [id])
+  createdAt          DateTime         @default(now())
+
 }
+model DeviceAccess {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId()
+
+  ownerId        String   @db.ObjectId()
+  userId         String   @db.ObjectId()
+  user           User     @relation("UserAccessPermissions", fields: [userId], references: [id])
+
+  shutdown       Boolean  @default(true)
+  sleep          Boolean  @default(true)
+  restart        Boolean  @default(true)
+  lockScreen     Boolean  @default(true)
+  unlockScreen   Boolean  @default(true)
+  screenshot     Boolean  @default(true)
+  accessFiles    Boolean  @default(true)
+  openCamera     Boolean  @default(true)
+  controlAudio   Boolean  @default(true)
+  muteAudio      Boolean  @default(true)
+  accessTerminal Boolean  @default(true)
+  fileManager    Boolean  @default(true)
+  screenShare    Boolean  @default(true)
+  downloadFiles  Boolean  @default(true)
+  uploadFiles    Boolean  @default(true)
+  systemSettings Boolean  @default(true)
+
+  createdAt      DateTime @default(now())
+}
+

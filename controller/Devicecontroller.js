@@ -255,7 +255,12 @@ const acceptRequest = async (req, res) => {
         },
       },
     });
-
+  await prisma.deviceAccess.create({
+    data: {
+      ownerId: userId,
+      userId: requesterId,
+    },
+  });
     res.json({ message: "Request accepted" });
   } catch (error) {
     console.error("Error accepting request:", error);
@@ -394,6 +399,71 @@ const removeAccess = async (req, res) => {
   }
 };
 
+ const updatePermissionAccess = async (req, res) => {
+  const { ownerId, targetUserId, permissions } = req.body;
+
+  if (!ownerId || !targetUserId || !permissions) {
+    return res.status(400).json({ error: "Missing fields" });
+  }
+
+  try {
+    const existing = await prisma.deviceAccess.findFirst({
+      where: {
+        ownerId,
+        userId: targetUserId,
+      },
+    });
+
+    if (existing) {
+  await prisma.deviceAccess.update({
+  where: { id: existing.id },
+  data: {
+    ...permissions, // only the ones being updated (e.g., { screen: true })
+  },
+});
+
+      return res.status(200).json({ message: "Permissions updated" });
+    } else {
+      await prisma.deviceAccess.create({
+        data: {
+          ownerId,
+          userId: targetUserId,
+          ...permissions,
+        },
+      });
+      return res.status(201).json({ message: "Permissions created" });
+    }
+  } catch (error) {
+    console.error("Error updating permissions:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+const allowpermittedstuffs = async (req, res) => {
+  const { ownerId, targetId } = req.body;
+
+  if (!ownerId || !targetId) {
+    return res.status(400).json({ error: "Missing ownerId or targetId" });
+  }
+
+  try {
+    const detail = await prisma.deviceAccess.findFirst({
+      where: {
+        ownerId: ownerId,
+        userId: targetId,
+      },
+    });
+console.log(detail)
+    if (!detail) {
+      return res.status(404).json({ error: "Permission record not found" });
+    }
+
+    res.status(200).json(detail);
+  } catch (error) {
+    console.error("Error fetching permissions:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   segregatedevicedependonaccess,
   addownership,
@@ -403,6 +473,8 @@ module.exports = {
   rejectRequest,
   acceptRequest,
   allowedDevices,
-  removeAccess
+  removeAccess,
+  updatePermissionAccess,
+  allowpermittedstuffs
 };
 
