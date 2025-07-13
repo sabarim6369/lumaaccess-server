@@ -8,7 +8,8 @@ app.use(cookieParser());
 app.use(cors({
   origin: ['https://lumaaccess.vercel.app',"http://localhost:8080"],
   credentials: true, 
-}));app.use(express.json());
+}));
+app.use(express.json());
 
 const Authrouter = require('./Router/Authrouter');
 const Devicerouter = require('./Router/Devicerouter');

@@ -64,17 +64,17 @@ const login = async (req, res) => {
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
-
+ const expiresIn = rememberMe ? '7d' : '1h';
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn }
     );
 res.cookie("token",token,{
    httpOnly: true,
     secure: true,
     sameSite: "Strict",
-    maxAge: 60 * 60 * 1000,
+    maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000
 })
     res.json({ message: 'Login successful', token, userId: user.id });
   } catch (error) {
