@@ -19,12 +19,16 @@ model User {
   password              String
   createdAt             DateTime @default(now())
   updatedAt             DateTime @default(now())
-  Requesteddevice       String[]
+  Requesteddevice       Json?
   Alloweddevice         String[]
   Deviceconnectedtome   String[]
-   Incomingrequests      String[] 
+  Incomingrequests      String[]
+
+   receivedRequests      Json? // 👈 JSON array of { userId, deviceId }
 
   devices               Device[] @relation("UserDevices")
+  sentRequests          Json?    // 👈 optionally also keep this for outgoing requests
+
 }
 
 model Device {
@@ -37,3 +41,4 @@ model Device {
   owner     User     @relation("UserDevices", fields: [ownerId], references: [id]) 
   createdAt DateTime @default(now())
 }
+
