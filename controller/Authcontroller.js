@@ -66,7 +66,7 @@ const login = async (req, res) => {
     }
  const expiresIn = rememberMe ? '7d' : '1h';
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email,name:user.name },
       process.env.JWT_SECRET,
       { expiresIn }
     );
@@ -76,7 +76,7 @@ res.cookie("token",token,{
   sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     maxAge: rememberMe ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000
 })
-    res.json({ message: 'Login successful', token, userId: user.id });
+    res.json({ message: 'Login successful', token, userId: user.id,name:user.name,email:user.email});
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });

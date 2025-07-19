@@ -13,6 +13,7 @@ app.use(cookieParser());
 // }));
 app.use(cors({
   origin:"https://lumaaccess.vercel.app",
+  // origin:"http://localhost:8080",
   credentials: true, 
 }))
 app.use(express.json());
