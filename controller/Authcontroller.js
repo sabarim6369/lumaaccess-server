@@ -40,7 +40,7 @@ res.cookie("token",token,{
   sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
     maxAge: 60 * 60 * 1000,
 })
-    res.status(201).json({ message: 'User created successfully', userId: user.id, token });
+    res.status(201).json({ message: 'User created successfully', userId: user.id, token,name:user.name,email:user.email });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Internal server error' });
