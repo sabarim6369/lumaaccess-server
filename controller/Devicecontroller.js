@@ -1,6 +1,7 @@
 const prisma = require('../lib/Prisma');
 const { ObjectId } = require('mongodb');
 const { connectedDevices } = require('../socket/socket');
+const {images,camera} = require('../socket/socket');
 
 const segregatedevicedependonaccess = async (req, res) => {
   const { userId } = req.body;
@@ -10,10 +11,10 @@ const segregatedevicedependonaccess = async (req, res) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        sentRequests: true,       // userIds this user requested access to
-        receivedRequests: true,   // userIds who requested access to this user
-        allowedDevices: true,     // deviceIds user shared with others
-        connectedDevices: true,   // deviceIds user can access
+        sentRequests: true,      
+        receivedRequests: true,   
+        allowedDevices: true,    
+        connectedDevices: true,  
       },
     });
 
@@ -78,7 +79,7 @@ const handleSendCommand = (req, res) => {
 const getConnectedDevices = async (req, res) => {
   const userId = req.query.userid;
   if (!userId) return res.status(400).json({ error: "Missing userId" });
-
+console.log(images);
   try {
     const list = [];
     const incomingrequest = [];
@@ -89,7 +90,6 @@ const getConnectedDevices = async (req, res) => {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Fetch live devices from WebSocket
     for (const [deviceId, info] of connectedDevices.entries()) {
       const deviceowner = await prisma.device.findUnique({
         where: { deviceId },
@@ -121,7 +121,6 @@ console.log(deviceownerid)
       });
     }
 
-    // Handle users who requested access to your devices
     for (const requesterId of user.receivedRequests) {
       // const isAlreadyHandled = list.some((d) => d.userId === requesterId);
       // if (isAlreadyHandled) continue;
@@ -152,11 +151,13 @@ console.log(deviceownerid)
     const liveincomingrequest = list.filter((e) => e.statusType === "incomingrequest");
     console.log(connectedevice)
 console.log("✅✅✅",incomingrequest)
+console.log("consoling the images",images)
     res.json({
       list,
       connectedevice,
       requesteddevice,
       incomingrequest: [...liveincomingrequest, ...incomingrequest],
+       images: Object.fromEntries(images),
     });
   } catch (error) {
     console.error("❌ Error in getConnectedDevices:", error);
@@ -164,9 +165,22 @@ console.log("✅✅✅",incomingrequest)
   }
 };
 
+const getimages=async(req,res)=>{
+console.log(images);
+ res.json({
+       images: Object.fromEntries(images),
+    });
+}
+const getlivevideo=async(req,res)=>{
+console.log(camera);
+ res.json({
+       camera: Object.fromEntries(camera),
+    });
+}
+
 
 const sendRequest = async (req, res) => {
-  console.log(req.body)
+  console.log("🤣🤣🤣🤣🤣",req.body)
   const { fromUserId, toUserId } = req.body;
 
   if (!fromUserId || !toUserId) return res.status(400).json({ error: 'Missing fromUserId or toUserId' });
@@ -176,7 +190,10 @@ const sendRequest = async (req, res) => {
     const fromUser = await prisma.user.findUnique({ where: { id: fromUserId }, select: { sentRequests: true } });
     const toUser = await prisma.user.findUnique({ where: { id: toUserId }, select: { receivedRequests: true } });
 console.log(fromUser,toUser)
-    if (!fromUser || !toUser) return res.status(404).json({ error: 'User(s) not found' });
+    if (!fromUser || !toUser){
+      console.log("insie")
+      return res.status(404).json({ error: 'User(s) not found' });
+    }
 
     const fromUserSent = fromUser.sentRequests || [];
     const toUserReceived = toUser.receivedRequests || [];
@@ -475,6 +492,8 @@ module.exports = {
   allowedDevices,
   removeAccess,
   updatePermissionAccess,
-  allowpermittedstuffs
+  allowpermittedstuffs,
+  getimages,
+  getlivevideo,
 };
 
