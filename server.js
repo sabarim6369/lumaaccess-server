@@ -7,15 +7,24 @@ const cookieParser = require("cookie-parser");
 console.log("NODE_ENV:", process.env.NODE_ENV);
 
 app.use(cookieParser());
-// app.use(cors({
-//   origin:process.env.NODE_ENV === 'development'?"http://localhost:8080":"https://lumaaccess.vercel.app",
-//   credentials: true, 
-// }));
+// Allow both localhost and production
+const allowedOrigins = [
+  "http://localhost:8080", 
+  "http://localhost:5173", 
+  "https://lumaaccess.vercel.app"
+];
 app.use(cors({
-  origin:"https://lumaaccess.vercel.app",
-  // origin:"http://localhost:8080",
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, 
-}))
+}));
 app.use(express.json());
 
 const Authrouter = require('./Router/Authrouter');
