@@ -101,7 +101,10 @@ console.log(images);
 
       let statusType = "onlinedevice";
 console.log(deviceownerid)
-      if (user.connectedDevices.includes(deviceownerid)) {
+      // If it's the user's own device, automatically mark as allowed
+      if (deviceownerid === userId) {
+        statusType = "allowed";
+      } else if (user.connectedDevices.includes(deviceownerid)) {
         statusType = "allowed";
       } else if (user.sentRequests.includes(deviceownerid)) {
         statusType = "requested";
