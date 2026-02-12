@@ -1,18 +1,18 @@
 {
   "name": "backend-server",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx prisma generate",
-    "start": "nodemon server.js"
+    "build": "prisma generate",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@prisma/client": "^6.11.1",
+    "@prisma/client": "^5.10.2",
+    "prisma": "^5.10.2",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -21,7 +21,6 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.17.0",
     "mongoose": "^8.16.3",
-    "nodemon": "^3.1.10",
     "ws": "^8.18.3"
   }
 }
