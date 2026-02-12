@@ -78,8 +78,11 @@ const handleSendCommand = (req, res) => {
 
 const getConnectedDevices = async (req, res) => {
   const userId = req.query.userid;
+  console.log("🔍 getConnectedDevices called for userId:", userId);
   if (!userId) return res.status(400).json({ error: "Missing userId" });
-console.log(images);
+  console.log("📡 Connected devices in memory:", connectedDevices.size);
+  console.log("🖼️ Images map size:", images.size);
+  
   try {
     const list = [];
     const incomingrequest = [];
@@ -88,28 +91,50 @@ console.log(images);
       where: { id: userId },
     });
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      console.log("❌ User not found:", userId);
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    console.log("✅ User found:", user.email);
+    console.log("👤 User connectedDevices:", user.connectedDevices);
 
     for (const [deviceId, info] of connectedDevices.entries()) {
+      console.log("🔄 Processing device:", deviceId, "with info:", {
+        userId: info.userId,
+        name: info.name,
+        os: info.os
+      });
+      
       const deviceowner = await prisma.device.findUnique({
         where: { deviceId },
       });
 
-      if (!deviceowner) continue;
+      if (!deviceowner) {
+        console.log("⚠️ Device not found in DB:", deviceId);
+        continue;
+      }
+      
+      console.log("📋 Device owner:", deviceowner.ownerId);
 
       const deviceownerid = deviceowner.ownerId;
 
       let statusType = "onlinedevice";
-console.log(deviceownerid)
       // If it's the user's own device, automatically mark as allowed
       if (deviceownerid === userId) {
         statusType = "allowed";
+        console.log("✅ Own device - marked as allowed");
       } else if (user.connectedDevices.includes(deviceownerid)) {
         statusType = "allowed";
+        console.log("✅ Connected device - marked as allowed");
       } else if (user.sentRequests.includes(deviceownerid)) {
         statusType = "requested";
+        console.log("🟡 Sent request - marked as requested");
       } else if (user.receivedRequests.includes(deviceownerid)) {
         statusType = "incomingrequest";
+        console.log("🟠 Received request - marked as incoming");
+      } else {
+        console.log("🔵 Online device - no relationship");
       }
 
       list.push({

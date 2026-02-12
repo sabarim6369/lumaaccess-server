@@ -42,6 +42,10 @@ function setupWebSocketServer(server) {
             lastSeen: data.lastSeen,
           });
           console.log(`✅ Registered device: ${data.deviceId}`);
+          console.log(`   └─ User: ${data.userId}`);
+          console.log(`   └─ Name: ${data.name}`);
+          console.log(`   └─ OS: ${data.os}`);
+          console.log(`   └─ Total devices in map: ${connectedDevices.size}`);
         }
       } catch (err) {
         console.error('❌ Error parsing message:', err.message);
